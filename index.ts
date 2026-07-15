@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
+import { middleware } from './lib';
 const app = express();
 app.use(express.json());
 
@@ -122,7 +123,7 @@ app.post("/login", async (req, res) => {
 });
 
 // --- Orders ---
-app.post("/order", (req, res) => {
+app.post("/order", middleware, (req, res) => {
     // body: { userId, side: "BUY"|"SELL", type: "LIMIT"|"MARKET", symbol, price?, qty }
     // 1. validate input + stock exists
     // 2. check + lock balance (INR for BUY, stock for SELL)
@@ -139,7 +140,7 @@ app.delete("/order/:orderId", (req, res) => {
     // 4. mark status = CANCELLED
 });
 
-app.get("/orders", (req, res) => {
+app.get("/orders", middleware, (req, res) => {
     // query: ?status=OPEN  (or all)
     // return current user's orders
 });
@@ -159,7 +160,7 @@ app.get("/stocks", (req, res) => {
 });
 
 // --- User data ---
-app.get("/balance", (req, res) => {
+app.get("/balance",middleware, (req, res) => {
     // return BALANCES[userId] for the authed user
 });
 
