@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
-
+import jwt from 'jsonwebtoken';
 const app = express();
 app.use(express.json());
 
@@ -13,14 +13,14 @@ interface User {
 }
 
 interface Stock {
-    id : number,
-    title : string,
-    symbol : string
+    id: number,
+    title: string,
+    symbol: string
 }
 
 interface inrbalance {
-    available : number,
-    locked : number,
+    available: number,
+    locked: number,
 }
 
 const USERS: User[] = [];
@@ -62,25 +62,25 @@ app.post("/signup", async (req, res) => {
     };
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    let uid =  uuidv4();
+    let uid = uuidv4();
     USERS.push(
         {
             id: uid,
-            username : username,
+            username: username,
             password: hashedPassword
         }
     );
 
 
     const mybalance = BALANCES[uid] = {
-        INR : {
-            available : 1000,
-            locked : 0
+        INR: {
+            available: 1000,
+            locked: 0
         }
     }
 
     res.json({
-        userBalance : mybalance
+        userBalance: mybalance
     })
 
     // 2. hash password (bcrypt/argon2)
@@ -88,8 +88,35 @@ app.post("/signup", async (req, res) => {
     // 4. init BALANCES[userId] with INR: { available: 0, locked: 0 }
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
     // 1. find user by username
+
+    const { username, password } = req.body;
+
+    for (let user of USERS) {
+        if (user.username === username) {
+            const ismatch = await bcrypt.compare(password, user.password);
+
+            if (ismatch) {
+                const token = jwt.sign({
+                    username: user.username, userId: user.id
+                }, process.env.JWT_SECRET!, { expiresIn: "7d" });
+
+                return res.json({
+                    jwtToken: token
+                })
+            } else {
+                return res.json({
+                    error: "Invalid Credentials!"
+                })
+            }
+        }
+    }
+
+
+    return res.json({
+        error: "User not found !!"
+    })
     // 2. compare hashed password
     // 3. return JWT / session token
 });
